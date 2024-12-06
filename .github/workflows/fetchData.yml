@@ -1,0 +1,44 @@
+name: Fetch Sensor Data
+on:
+  schedule:
+    - cron: '0 * * * *'
+jobs:
+  fetch_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22' 
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm  # Install pnpm globally
+          pnpm install          # Install project dependencies
+      - name: Verify dependencies
+        run: |
+          pnpm list
+      - name: Fetch data from Supabase
+        env:
+          SUPABASE_URL: "https://bpqucunvnpwsorfljzvc.supabase.co"  
+          SUPABASE_API_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwcXVjdW52bnB3c29yZmxqenZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk4MzM2NzIsImV4cCI6MjAzNTQwOTY3Mn0.2S3Xl7noywbtHw6vI7avpvjEIzsmYhrzi8MmF24ff2M"  # Direct API Key value        
+        run: node scripts/fetchStatus.js  
+      - name: Check if sensorData2.json was created
+        run: |
+          if [ ! -f sensorData2.json ]; then
+            echo "sensorData2.json not created. No data fetched."
+            exit 1
+          else
+            echo "sensorData2.json created successfully."
+          fi
+      - name: Commit and push data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add sensorData2.json
+          git commit -m "Update sensor data" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+       
